@@ -1,16 +1,33 @@
 import sys
+import os
+
+def find_executable(cmd):
+    paths = os.environ.get("PATH", "").split(os.pathsep)
+    for path in paths:
+        full_path = os.path.join(path, cmd)
+        if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
+            return full_path
+    return None
+
+def sh_type(cmd):
+    executable_path = find_executable(cmd)
+    if cmd in BUILTINS:
+        print(f"{cmd} is a shell builtin")
+    elif executable_path is not None:
+        print(f"{cmd} is {executable_path}")
+    else:
+        print(f"{cmd}: not found")
 
 BUILTINS = {
     "exit": lambda code=0, *_: sys.exit(int(code)),
     "echo": lambda *args: print(" ".join(args)),
-    "type": lambda x: (
-        print(f"{x} is a shell builtin") if x in BUILTINS else print(f"{x}: not found")
-    ),
+    "type": sh_type,
 }
 
 def main():
     while True:
         sys.stdout.write("$ ")
+        sys.stdout.flush()
 
     # Wait for user input
         user_Input = input().split()
