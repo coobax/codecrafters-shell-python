@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 
 def find_executable(cmd):
     paths = os.environ.get("PATH", "").split(os.pathsep)
@@ -32,15 +33,20 @@ def main():
     # Wait for user input
         user_Input = input().split()
 
-        cmd = user_Input[0]
+        command_name = user_Input[0]
 
         args = user_Input[1:]
         
-        if cmd in BUILTINS:
-            BUILTINS[cmd](*args)
-            
+        if command_name in BUILTINS:
+            BUILTINS[command_name](*args)
+        
+        elif find_executable(command_name):
+            try:
+                subprocess.run([command_name] + args)
+            except Exception as e:
+                print(f"Error executing {command_name}: {e}")
         else:    
-            print(f"{cmd}: command not found")
+            print(f"{command_name}: command not found")
 
 if __name__ == "__main__":
     main()
