@@ -23,6 +23,7 @@ BUILTINS = {
     "exit": lambda code=0, *_: sys.exit(int(code)),
     "echo": lambda *args: print(" ".join(args)),
     "type": sh_type,
+    "pwd": lambda *args: print(os.getcwd()),
 }
 
 def main():
@@ -30,21 +31,27 @@ def main():
         sys.stdout.write("$ ")
         sys.stdout.flush()
 
-    # Wait for user input
-        user_Input = input().split()
+    # Read input; exit cleanly on EOF (Ctrl+D / input stream ended)
+        try:
+            user_Input = input().split()
+        except EOFError:
+            break
+        
+        # Ignore empty lines (just pressing Enter)
+        if not user_Input:
+            continue
 
         command_name = user_Input[0]
 
         args = user_Input[1:]
         
+        resolved = find_executable(command_name)
+
         if command_name in BUILTINS:
-            BUILTINS[command_name](*args)
-        
-        elif find_executable(command_name):
-            try:
-                subprocess.run([command_name] + args)
-            except Exception as e:
-                print(f"Error executing {command_name}: {e}")
+            BUILTINS[command_name](*args)       
+        elif resolved is not None:
+                # Run the resolved executable, but keep argv[0] as the original command name
+                subprocess.run([command_name] + args, executable=resolved)
         else:    
             print(f"{command_name}: command not found")
 
