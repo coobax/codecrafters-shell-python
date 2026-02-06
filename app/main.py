@@ -34,16 +34,21 @@ def sh_cd(*cd_path):
         print("cd: too many arguments")
         return
 
+#No shlex for learning purposes, so we implement our own simple parser that handles single quotes and whitespace
 def parse_line(line):
     in_single = False
+    in_double = False
     tkn_active = False
     cur_tkn = []
     tokens = []
     for i in range(len(line)):
-        if line[i] == "'":
+        if line[i] == "'" and not in_double:
             tkn_active = True
             in_single = not in_single
-        elif line[i].isspace() and not in_single:
+        elif line[i] == '"' and not in_single:
+            tkn_active = True
+            in_double = not in_double
+        elif line[i].isspace() and not in_single and not in_double:
             if tkn_active:
                 tokens.append("".join(cur_tkn))
                 cur_tkn = []
@@ -55,7 +60,7 @@ def parse_line(line):
     if tkn_active:
         tokens.append("".join(cur_tkn))
     return tokens
-    #return "".join(cur_tkn).split()
+   
 
 
 
