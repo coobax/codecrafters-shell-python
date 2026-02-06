@@ -34,6 +34,31 @@ def sh_cd(*cd_path):
         print("cd: too many arguments")
         return
 
+def parse_line(line):
+    in_single = False
+    tkn_active = False
+    cur_tkn = []
+    tokens = []
+    for i in range(len(line)):
+        if line[i] == "'":
+            tkn_active = True
+            in_single = not in_single
+        elif line[i].isspace() and not in_single:
+            if tkn_active:
+                tokens.append("".join(cur_tkn))
+                cur_tkn = []
+                tkn_active = False
+        else: 
+            if not tkn_active:
+                tkn_active = True
+            cur_tkn.append(line[i])
+    if tkn_active:
+        tokens.append("".join(cur_tkn))
+    return tokens
+    #return "".join(cur_tkn).split()
+
+
+
 BUILTINS = {
     "exit": lambda code=0, *_: sys.exit(int(code)),
     "echo": lambda *args: print(" ".join(args)),
@@ -47,13 +72,12 @@ def main():
         sys.stdout.write("$ ")
         sys.stdout.flush()
 
-    # Read input; exit cleanly on EOF (Ctrl+D / input stream ended)
         try:
-            user_Input = input().split()
+            line = input()
+            user_Input = parse_line(line)
         except EOFError:
             break
-        
-        # Ignore empty lines (just pressing Enter)
+
         if not user_Input:
             continue
 
@@ -66,7 +90,6 @@ def main():
         if command_name in BUILTINS:
             BUILTINS[command_name](*args)       
         elif resolved is not None:
-                # Run the resolved executable, but keep argv[0] as the original command name
                 subprocess.run([command_name] + args, executable=resolved)
         else:    
             print(f"{command_name}: command not found")
