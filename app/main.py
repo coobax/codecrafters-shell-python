@@ -32,9 +32,7 @@ def sh_cd(*args):
     except OSError:
         print(f"cd: {target}: No such file or directory")
 
-#No shlex for learning and fun, so we implement our own simple parser
 def parse_line(line):
-    no_escapes = False
     esc_char = False
     in_single = False
     in_double = False
@@ -45,21 +43,24 @@ def parse_line(line):
         if esc_char:
             cur_tkn.append(ch)
             esc_char = False
+            tkn_active = True
             continue
 
-        if ch == '\\' and (not in_single or not in_double) and no_escapes == False:
-            esc_char = not esc_char
-            if esc_char:
-                continue 
-        
+        if ch == '\\':
+            if not in_single and not in_double:
+                esc_char = not esc_char
+                if esc_char:
+                    continue
+            elif in_double:
+                esc_char = True
+                continue
+                 
         if ch == "'" and not in_double:
             tkn_active = True
             in_single = not in_single
-            no_escapes = not no_escapes
         elif ch == '"' and not in_single:
             tkn_active = True
             in_double = not in_double
-            no_escapes = not no_escapes
         elif ch.isspace() and not in_single and not in_double:
             if tkn_active:
                 tokens.append("".join(cur_tkn))
