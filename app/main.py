@@ -2,6 +2,21 @@ import sys
 import os
 import subprocess
 
+'''
+Hier werden Ideen oder aktuelle Bausteine gesammelt:
+    Redirect:
+          # Save original stdout
+            o = sys.stdout
+
+            # Redirect stdout to a file
+            with open('output.txt', 'w') as f:
+                sys.stdout = f
+                for i in range(10):
+                    print("printing line", i)
+
+            # Restore stdout
+            sys.stdout = o
+'''
 def find_executable(exec_name):
     paths = os.environ.get("PATH", "").split(os.pathsep)
     for path in paths:
@@ -39,6 +54,7 @@ def parse_line(line):
     tkn_active = False
     cur_tkn = []
     tokens = []
+
     for ch in line:
         if esc_char:
             cur_tkn.append(ch)
@@ -54,7 +70,7 @@ def parse_line(line):
             elif in_double:
                 esc_char = True
                 continue
-                 
+                
         if ch == "'" and not in_double:
             tkn_active = True
             in_single = not in_single
@@ -70,10 +86,11 @@ def parse_line(line):
             if not tkn_active:
                 tkn_active = True
             cur_tkn.append(ch)
+
     if tkn_active:
         tokens.append("".join(cur_tkn))
     return tokens
-   
+
 BUILTINS = {
     "exit": lambda code=0, *_: sys.exit(int(code)),
     "echo": lambda *args: print(" ".join(args)),
@@ -84,6 +101,7 @@ BUILTINS = {
 
 def main():
     while True:
+        redirect_target = False
         sys.stdout.write("$ ")
         sys.stdout.flush()
 
@@ -99,6 +117,20 @@ def main():
         command_name = user_Input[0]
 
         args = user_Input[1:]
+
+        for i, arg in enumerate(args):
+            if arg == ">" or arg == "1>":
+                if i + 1 < len(args):
+                    out_name = args[i + 1]
+                    redirect_target = True
+                    if redirect_target == True:
+                        with open(out_name, 'w') as f:
+                            sys.stdout = f
+                            print(f"Output redirection not implemented yet\nFilename: {out_name}")
+                else:
+                    print(f"Syntax error: erwartet Dateiname nach '{arg}'")
+                break
+            
 
         if command_name in BUILTINS:
             BUILTINS[command_name](*args)       
