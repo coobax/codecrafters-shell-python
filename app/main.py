@@ -16,6 +16,28 @@ Hier werden Ideen oder aktuelle Bausteine gesammelt:
 
             # Restore stdout
             sys.stdout = o
+
+
+    for i, arg in enumerate(args):
+            if arg == ">" or arg == "1>":
+                if i + 1 < len(args):
+                    out_name = args[i + 1]
+                    redirect_target = True
+                    if redirect_target == True:
+                        with open(out_name, 'w') as f:
+                            sys.stdout = f
+                            print(f"Output redirection not implemented yet\nFilename: {out_name}")
+                else:
+                    print(f"Syntax error: erwartet Dateiname nach '{arg}'")
+                break
+    
+    
+    Todo:
+    Umbau in Klassen und Funktionen
+    Parser in State Klasse
+    Execution in eigener Funktion
+    Builtins in eigene Funktionen
+    Command Container
 '''
 def find_executable(exec_name):
     paths = os.environ.get("PATH", "").split(os.pathsep)
@@ -118,18 +140,17 @@ def main():
 
         args = user_Input[1:]
 
-        for i, arg in enumerate(args):
-            if arg == ">" or arg == "1>":
-                if i + 1 < len(args):
-                    out_name = args[i + 1]
-                    redirect_target = True
-                    if redirect_target == True:
-                        with open(out_name, 'w') as f:
-                            sys.stdout = f
-                            print(f"Output redirection not implemented yet\nFilename: {out_name}")
-                else:
-                    print(f"Syntax error: erwartet Dateiname nach '{arg}'")
-                break
+        if ">" in args:
+            o = sys.stdout
+            idx = args.index(">")
+            out_name = args[idx + 1]
+
+            # Redirect stdout to a file
+            with open(out_name, 'w') as f:
+                sys.stdout = f
+
+            # Restore stdout
+            #sys.stdout = o
             
 
         if command_name in BUILTINS:
