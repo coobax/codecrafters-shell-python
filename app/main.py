@@ -1,6 +1,8 @@
 import sys
 import os
 import subprocess
+from enum import Enum, auto
+from contextlib import redirect_stdout
 
 '''
 Hier werden Ideen oder aktuelle Bausteine gesammelt:
@@ -33,22 +35,82 @@ Hier werden Ideen oder aktuelle Bausteine gesammelt:
     
     
     Todo:
-    Umbau in Klassen und Funktionen
-    Parser in State Klasse
     Execution in eigener Funktion
-    Builtins in eigene Funktionen
-    Command Container
+    Command Container: main() nutzt nur noch cmd.name, cmd.args, cmd.stdout_target
 '''
-def find_executable(exec_name):
-    paths = os.environ.get("PATH", "").split(os.pathsep)
-    for path in paths:
+
+class ParseState(Enum):
+
+    NORMAL = auto()
+    IN_SINGLE = auto()
+    IN_DOUBLE = auto()
+    ESCAPE = auto()
+
+def _parse_line(line):
+
+    state = ParseState.NORMAL
+    current = []
+    tokens = []
+
+    esc_dbl = False
+
+    for ch in line:
+        match state:
+            case ParseState.NORMAL:
+                if ch == '\\':
+                    state = ParseState.ESCAPE
+                elif ch == "'":
+                    state = ParseState.IN_SINGLE
+                elif ch == '"':
+                    state = ParseState.IN_DOUBLE
+                elif ch.isspace():
+                    if current:
+                        tokens.append("".join(current))
+                        current = []
+                else:
+                    current.append(ch)
+            
+            case ParseState.IN_SINGLE:
+                if ch == "'":
+                    state = ParseState.NORMAL
+                else:
+                    current.append(ch)
+
+            case ParseState.IN_DOUBLE:
+                if ch == '"':
+                    state = ParseState.NORMAL
+                elif ch in ("\\"):
+                    state = ParseState.ESCAPE
+                    esc_dbl = True
+                else:
+                    current.append(ch)
+
+            case ParseState.ESCAPE:
+                if esc_dbl == True:
+                    if ch in ("\\", '"', "$", "\n"):
+                        current.append(ch)
+                    else:
+                        current.append("\\")
+                        current.append(ch)
+                    state = ParseState.IN_DOUBLE
+                    esc_dbl = False
+                else:
+                    current.append(ch)
+                    state = ParseState.NORMAL
+    if current:
+        tokens.append("".join(current))
+
+    return tokens
+
+def _find_executable(exec_name):
+    for path in os.environ.get("PATH", "").split(os.pathsep):
         full_path = os.path.join(path, exec_name)
         if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
             return full_path
     return None
 
-def sh_type(cmd_name):
-    executable_path = find_executable(cmd_name)
+def _type(cmd_name):
+    executable_path = _find_executable(cmd_name)
     if cmd_name in BUILTINS:
         print(f"{cmd_name} is a shell builtin")
     elif executable_path is not None:
@@ -56,7 +118,7 @@ def sh_type(cmd_name):
     else:
         print(f"{cmd_name}: not found")
 
-def sh_cd(*args):
+def _cd(*args):
     if len(args) == 0:
         target = os.path.expanduser("~")
     elif len(args) == 1:
@@ -69,67 +131,58 @@ def sh_cd(*args):
     except OSError:
         print(f"cd: {target}: No such file or directory")
 
-def parse_line(line):
-    esc_char = False
-    in_single = False
-    in_double = False
-    tkn_active = False
-    cur_tkn = []
-    tokens = []
+def _exit(code=0):
+    sys.exit(int(code))
+    
+def _echo(*args):
+    print(" ".join(args))
 
-    for ch in line:
-        if esc_char:
-            cur_tkn.append(ch)
-            esc_char = False
-            tkn_active = True
-            continue
+def _pwd():
+    print(os.getcwd())
 
-        if ch == '\\':
-            if not in_single and not in_double:
-                esc_char = not esc_char
-                if esc_char:
-                    continue
-            elif in_double:
-                esc_char = True
-                continue
-                
-        if ch == "'" and not in_double:
-            tkn_active = True
-            in_single = not in_single
-        elif ch == '"' and not in_single:
-            tkn_active = True
-            in_double = not in_double
-        elif ch.isspace() and not in_single and not in_double:
-            if tkn_active:
-                tokens.append("".join(cur_tkn))
-                cur_tkn = []
-                tkn_active = False
-        else: 
-            if not tkn_active:
-                tkn_active = True
-            cur_tkn.append(ch)
+def _exec_subprocess(cmd, args:list[str], stdout=None):
+    resolved = _find_executable(cmd)
+    if resolved is None:
+        print(f"{cmd}: command not found")
+    else:
+        try:
+            subprocess.run([cmd] + args, executable=resolved, stdout=stdout)
+        except FileNotFoundError:
+            print(f"{cmd}: command not found")
+        except PermissionError:
+            print(f"{cmd}: permission denied")
+        except OSError as e:
+            print(f"Error executing {cmd}: {e}")
 
-    if tkn_active:
-        tokens.append("".join(cur_tkn))
-    return tokens
+def _run_cmd(command_name, args, stdout=None):
+    #Maybe redirect schlater setzen? Zusätzliches Arg redirect_tkn=False?
+    try:
+        if command_name in BUILTINS:
+            if stdout is None:
+                BUILTINS[command_name](*args)
+            else:
+                with redirect_stdout(stdout):
+                    BUILTINS[command_name](*args)      
+        else:
+            _exec_subprocess(command_name, args, stdout = stdout)
+    except Exception as e:
+        raise e
 
 BUILTINS = {
-    "exit": lambda code=0, *_: sys.exit(int(code)),
-    "echo": lambda *args: print(" ".join(args)),
-    "type": sh_type,
-    "pwd": lambda *args: print(os.getcwd()),
-    "cd": sh_cd,
+    "exit": _exit,
+    "echo": _echo,
+    "type": _type,
+    "pwd": _pwd,
+    "cd": _cd,
 }
 
 def main():
     while True:
-        redirect_target = False
         sys.stdout.write("$ ")
         sys.stdout.flush()
-
         try:
             line = input()
-            user_Input = parse_line(line)
+            user_Input = _parse_line(line)
         except EOFError:
             break
 
@@ -140,34 +193,22 @@ def main():
 
         args = user_Input[1:]
 
-        if ">" in args:
-            o = sys.stdout
-            idx = args.index(">")
-            out_name = args[idx + 1]
-
-            # Redirect stdout to a file
-            with open(out_name, 'w') as f:
-                sys.stdout = f
-
-            # Restore stdout
-            #sys.stdout = o
-            
-
-        if command_name in BUILTINS:
-            BUILTINS[command_name](*args)       
-        else:
-            resolved = find_executable(command_name)
-            if resolved is None:
-                print(f"{command_name}: command not found")
+        if ">" in args or "1>" in args:
+            if ">" in args:
+                idx = args.index(">")
             else:
-                try:
-                    subprocess.run([command_name] + args, executable=resolved)
-                except FileNotFoundError:
-                    print(f"{command_name}: command not found")
-                except PermissionError:
-                    print(f"{command_name}: permission denied")
-                except OSError as e:
-                    print(f"Error executing {command_name}: {e}")
+                idx = args.index("1>")
+            out_name = args[idx + 1]
+            args_cut = args[:idx]
+            #out_name.parent.mkdir(parents=True, exist_ok=True) needs "Path" imported
+            with open(out_name, 'w') as f:
+                _run_cmd(command_name, args_cut, stdout = f)
+            #Hier abfangen an welcher Position redir sitzt und weitergeben?        
+        else:
+            _run_cmd(command_name, args)
 
+
+    
+        
 if __name__ == "__main__":
     main()
