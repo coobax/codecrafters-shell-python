@@ -169,6 +169,7 @@ def extract_redirections(args):
     stderr_handle = None
     stdout_handle = None
     stdout_handle_append = False
+    stderr_handle_append = False
     clean_args = []
     i = 0
     while i < len(args):
@@ -187,12 +188,17 @@ def extract_redirections(args):
             if i + 1 < len(args):
                 stderr_handle = args[i + 1]
                 i += 2
+        elif args[i] == "2>>":
+            if i + 1 < len(args):
+                stderr_handle = args[i + 1]
+                stderr_handle_append = True
+                i += 2
             else:
                 i += 1      
         else:
             clean_args.append(args[i])
             i += 1
-    return clean_args, stdout_handle, stderr_handle, stdout_handle_append
+    return clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append
 
 
 BUILTINS = {
@@ -220,14 +226,17 @@ def main():
 
         args = user_Input[1:]
         
-        clean_args, stdout_handle, stderr_handle, stdout_handle_append = extract_redirections(args)
+        clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append = extract_redirections(args)
 
         try:
             if stdout_handle_append == True:
                 stdout = open(stdout_handle, "a") if stdout_handle else None
             else:
                 stdout = open(stdout_handle, "w") if stdout_handle else None
-            stderr = open(stderr_handle, "w") if stderr_handle else None
+            if stderr_handle_append == True:
+                stderr = open(stderr_handle, "a") if stderr_handle else None
+            else:
+                stderr = open(stderr_handle, "w") if stderr_handle else None
             if command_name in BUILTINS:
                 _run_cmd(command_name, clean_args, stdout=stdout, stderr=stderr)
             else:
