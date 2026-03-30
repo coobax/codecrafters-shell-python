@@ -143,7 +143,7 @@ def _pwd():
 def _exec_subprocess(cmd, args, stdout=None, stderr=None):
     resolved = _find_executable(cmd)
     if resolved is None:
-        print(f"{cmd}: command not found")
+        print(f"{cmd}: command not found", file=stderr or sys.stderr)
     else:
         with redirect_stdout(stdout), redirect_stderr(stderr):
             try:
@@ -168,6 +168,7 @@ def _run_cmd(command_name, args, stdout=None, stderr=None):
 def extract_redirections(args):
     stderr_handle = None
     stdout_handle = None
+    stdout_handle_append = False
     clean_args = []
     i = 0
     while i < len(args):
@@ -177,16 +178,21 @@ def extract_redirections(args):
                 i += 2
             else:
                 i += 1
+        elif args[i] in ( "1>>", ">>"):
+            if  i + 1 < len(args):
+                stdout_handle_append = True
+                stdout_handle = args[i + 1]
+                i +=2
         elif args[i] == "2>":
             if i + 1 < len(args):
                 stderr_handle = args[i + 1]
                 i += 2
             else:
-                i += 1
+                i += 1      
         else:
             clean_args.append(args[i])
             i += 1
-    return clean_args, stdout_handle, stderr_handle
+    return clean_args, stdout_handle, stderr_handle, stdout_handle_append
 
 
 BUILTINS = {
@@ -214,12 +220,13 @@ def main():
 
         args = user_Input[1:]
         
-        clean_args, stdout_handle, stderr_handle = extract_redirections(args)
-        
-
+        clean_args, stdout_handle, stderr_handle, stdout_handle_append = extract_redirections(args)
 
         try:
-            stdout = open(stdout_handle, "w") if stdout_handle else None
+            if stdout_handle_append == True:
+                stdout = open(stdout_handle, "a") if stdout_handle else None
+            else:
+                stdout = open(stdout_handle, "w") if stdout_handle else None
             stderr = open(stderr_handle, "w") if stderr_handle else None
             if command_name in BUILTINS:
                 _run_cmd(command_name, clean_args, stdout=stdout, stderr=stderr)
