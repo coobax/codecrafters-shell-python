@@ -2,7 +2,7 @@ import sys
 import os
 import subprocess
 from enum import Enum, auto
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 
 '''
 Hier werden Ideen oder aktuelle Bausteine gesammelt:
@@ -140,33 +140,54 @@ def _echo(*args):
 def _pwd():
     print(os.getcwd())
 
-def _exec_subprocess(cmd, args:list[str], stdout=None):
+def _exec_subprocess(cmd, args, stdout=None, stderr=None):
     resolved = _find_executable(cmd)
     if resolved is None:
         print(f"{cmd}: command not found")
     else:
-        try:
-            subprocess.run([cmd] + args, executable=resolved, stdout=stdout)
-        except FileNotFoundError:
-            print(f"{cmd}: command not found")
-        except PermissionError:
-            print(f"{cmd}: permission denied")
-        except OSError as e:
-            print(f"Error executing {cmd}: {e}")
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            try:
+                subprocess.run([cmd] + args, executable=resolved, stdout=stdout, stderr=stderr)
+            except FileNotFoundError:
+                print(f"{cmd}: command not found")
+            except PermissionError:
+                print(f"{cmd}: permission denied")
+            except OSError as e:
+                print(f"Error executing {cmd}: {e}")
 
-def _run_cmd(command_name, args, stdout=None):
-    #Maybe redirect schlater setzen? Zusätzliches Arg redirect_tkn=False?
+def _run_cmd(command_name, args, stdout=None, stderr=None):
     try:
         if command_name in BUILTINS:
-            if stdout is None:
-                BUILTINS[command_name](*args)
-            else:
-                with redirect_stdout(stdout):
-                    BUILTINS[command_name](*args)      
+            with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
+                BUILTINS[command_name](*args)      
         else:
-            _exec_subprocess(command_name, args, stdout = stdout)
+            _exec_subprocess(command_name, args, stdout=stdout, stderr=stderr)
     except Exception as e:
         raise e
+    
+def extract_redirections(args):
+    stderr_handle = None
+    stdout_handle = None
+    clean_args = []
+    i = 0
+    while i < len(args):
+        if args[i] in (">", "1>"):
+            if i + 1 < len(args):
+                stdout_handle = args[i + 1]
+                i += 2
+            else:
+                i += 1
+        elif args[i] == "2>":
+            if i + 1 < len(args):
+                stderr_handle = args[i + 1]
+                i += 2
+            else:
+                i += 1
+        else:
+            clean_args.append(args[i])
+            i += 1
+    return clean_args, stdout_handle, stderr_handle
+
 
 BUILTINS = {
     "exit": _exit,
@@ -192,23 +213,27 @@ def main():
         command_name = user_Input[0]
 
         args = user_Input[1:]
+        
+        clean_args, stdout_handle, stderr_handle = extract_redirections(args)
+        
 
-        if ">" in args or "1>" in args:
-            if ">" in args:
-                idx = args.index(">")
+
+        try:
+            stdout = open(stdout_handle, "w") if stdout_handle else None
+            stderr = open(stderr_handle, "w") if stderr_handle else None
+            if command_name in BUILTINS:
+                _run_cmd(command_name, clean_args, stdout=stdout, stderr=stderr)
             else:
-                idx = args.index("1>")
-            out_name = args[idx + 1]
-            args_cut = args[:idx]
-            #out_name.parent.mkdir(parents=True, exist_ok=True) needs "Path" imported
-            with open(out_name, 'w') as f:
-                _run_cmd(command_name, args_cut, stdout = f)
-            #Hier abfangen an welcher Position redir sitzt und weitergeben?        
-        else:
-            _run_cmd(command_name, args)
+                _exec_subprocess(command_name, clean_args, stdout=stdout, stderr=stderr)
+        except Exception as e:
+            print(f"Error executing {command_name}: {e}", file=stderr or sys.stderr) 
+            continue
+        finally:
+            if stdout:
+                stdout.close()
+            if stderr:
+                stderr.close()
 
-
-    
         
 if __name__ == "__main__":
     main()
