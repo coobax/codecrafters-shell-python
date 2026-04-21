@@ -1,42 +1,15 @@
 import sys
 import os
 import subprocess
+import readline
 from enum import Enum, auto
 from contextlib import redirect_stdout, redirect_stderr
 
+readline.parse_and_bind("tab: complete")
+
 '''
-Hier werden Ideen oder aktuelle Bausteine gesammelt:
-    Redirect:
-          # Save original stdout
-            o = sys.stdout
-
-            # Redirect stdout to a file
-            with open('output.txt', 'w') as f:
-                sys.stdout = f
-                for i in range(10):
-                    print("printing line", i)
-
-            # Restore stdout
-            sys.stdout = o
-
-
-    for i, arg in enumerate(args):
-            if arg == ">" or arg == "1>":
-                if i + 1 < len(args):
-                    out_name = args[i + 1]
-                    redirect_target = True
-                    if redirect_target == True:
-                        with open(out_name, 'w') as f:
-                            sys.stdout = f
-                            print(f"Output redirection not implemented yet\nFilename: {out_name}")
-                else:
-                    print(f"Syntax error: erwartet Dateiname nach '{arg}'")
-                break
-    
-    
     Todo:
-    Execution in eigener Funktion
-    Command Container: main() nutzt nur noch cmd.name, cmd.args, cmd.stdout_target
+    
 '''
 
 class ParseState(Enum):
@@ -101,6 +74,14 @@ def _parse_line(line):
         tokens.append("".join(current))
 
     return tokens
+
+def completer(text, state):
+    matches = [cmd for cmd in BUILTINS if cmd.startswith(text)]
+    if state < len(matches):
+        return matches[state]
+    return None
+
+readline.set_completer(completer)
 
 def _find_executable(exec_name):
     for path in os.environ.get("PATH", "").split(os.pathsep):
