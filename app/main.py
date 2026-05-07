@@ -78,10 +78,10 @@ def _parse_line(line):
 def completer(text, state):
     matches = [cmd for cmd in BUILTINS if cmd.startswith(text)]
     if state < len(matches):
-        return matches[state]
+        return matches[state] + " "
     return None
 
-readline.set_completer(completer)
+
 
 def _find_executable(exec_name):
     for path in os.environ.get("PATH", "").split(os.pathsep):
@@ -189,6 +189,10 @@ BUILTINS = {
     "pwd": _pwd,
     "cd": _cd,
 }
+
+readline.set_completer_delims(' ')
+readline.set_completer(completer)
+readline.get_completer_delims()
 
 def main():
     while True:
