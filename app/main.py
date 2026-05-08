@@ -9,6 +9,7 @@ readline.parse_and_bind("tab: complete")
 
 '''
     Todo:
+        clean up _find_executables: EXECS statt PATH durchsuchen
     
 '''
 
