@@ -75,8 +75,20 @@ def _parse_line(line):
 
     return tokens
 
-def completer(text, state):
+def _collect_execs():
+    for path in os.environ.get("PATH", "").split(os.pathsep):
+        try:
+            for exec in os.listdir(path):
+                full_path = os.path.join(path, exec)
+                if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
+                    EXECS.add(exec)
+        except:
+            continue
+
+def _completer(text, state):
     matches = [cmd for cmd in BUILTINS if cmd.startswith(text)]
+    if not matches:
+        matches = [cmd for cmd in EXECS if cmd.startswith(text)]
     if state < len(matches):
         return matches[state] + " "
     return None
@@ -190,9 +202,11 @@ BUILTINS = {
     "cd": _cd,
 }
 
-readline.set_completer_delims(' ')
-readline.set_completer(completer)
-readline.get_completer_delims()
+EXECS = set()
+_collect_execs()
+  
+
+readline.set_completer(_completer)
 
 def main():
     while True:
