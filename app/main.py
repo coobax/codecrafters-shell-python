@@ -99,7 +99,7 @@ def match_display_hook(substitution, matches, longest_match_length):
     for match in matches:
         print (match + "  ",end="")
     print ("")
-    print ("$", readline.get_line_buffer(),end="")
+    #print ("$ ", readline.get_line_buffer(),end="")
     readline.redisplay()
 
 readline.set_completion_display_matches_hook(match_display_hook)
@@ -220,10 +220,10 @@ readline.set_completer(_completer)
 
 def main():
     while True:
-        sys.stdout.write("$ ")
-        sys.stdout.flush()
+        #sys.stdout.write("$ ")
+        #sys.stdout.flush()
         try:
-            line = input()
+            line = input("$ ")
             user_Input = _parse_line(line)
         except EOFError:
             break
