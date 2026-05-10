@@ -9,7 +9,7 @@ readline.parse_and_bind("tab: complete")
 
 '''
     Todo:
-        clean up _find_executables: EXECS statt PATH durchsuchen
+        
     
 '''
 
@@ -94,6 +94,15 @@ def _completer(text, state):
         return matches[state] + " "
     return None
 
+def match_display_hook(substitution, matches, longest_match_length):
+    print ("")
+    for match in matches:
+        print (match + "  ",end="")
+    print ("")
+    print ("$", readline.get_line_buffer(),end="")
+    readline.redisplay()
+
+readline.set_completion_display_matches_hook(match_display_hook)
 
 
 def _find_executable(exec_name):
@@ -159,7 +168,7 @@ def _run_cmd(command_name, args, stdout=None, stderr=None):
     except Exception as e:
         raise e
     
-def extract_redirections(args):
+def _extract_redirections(args):
     stderr_handle = None
     stdout_handle = None
     stdout_handle_append = False
@@ -226,7 +235,7 @@ def main():
 
         args = user_Input[1:]
         
-        clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append = extract_redirections(args)
+        clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append = _extract_redirections(args)
 
         try:
             if stdout_handle_append == True:
