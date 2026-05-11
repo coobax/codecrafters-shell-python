@@ -99,7 +99,7 @@ def match_display_hook(substitution, matches, longest_match_length):
     for match in matches:
         print (match + "  ",end="")
     print ("")
-    print ("$ ", readline.get_line_buffer(),end="")
+    print ("$", readline.get_line_buffer(),end="")
     readline.redisplay()
 
 readline.set_completion_display_matches_hook(match_display_hook)
