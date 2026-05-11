@@ -223,7 +223,7 @@ def main():
         sys.stdout.write("$ ")
         sys.stdout.flush()
         try:
-            line = input("$ ")
+            line = input()
             user_Input = _parse_line(line)
         except EOFError:
             break
