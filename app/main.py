@@ -9,6 +9,7 @@ readline.parse_and_bind("tab: complete")
 
 '''
     Todo:
+        
     
 '''
 
@@ -75,12 +76,33 @@ def _parse_line(line):
 
     return tokens
 
-def completer(text, state):
+def _collect_execs():
+    for path in os.environ.get("PATH", "").split(os.pathsep):
+        try:
+            for exec in os.listdir(path):
+                full_path = os.path.join(path, exec)
+                if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
+                    EXECS.add(exec)
+        except:
+            continue
+
+def _completer(text, state):
     matches = [cmd for cmd in BUILTINS if cmd.startswith(text)]
+    if not matches:
+        matches = [cmd for cmd in EXECS if cmd.startswith(text)]
     if state < len(matches):
         return matches[state] + " "
     return None
 
+def match_display_hook(substitution, matches, longest_match_length):
+    print ("")
+    for match in matches:
+        print (match + "  ",end="")
+    print ("")
+    #print ("$ ", readline.get_line_buffer(),end="")
+    readline.redisplay()
+
+readline.set_completion_display_matches_hook(match_display_hook)
 
 
 def _find_executable(exec_name):
@@ -146,7 +168,7 @@ def _run_cmd(command_name, args, stdout=None, stderr=None):
     except Exception as e:
         raise e
     
-def extract_redirections(args):
+def _extract_redirections(args):
     stderr_handle = None
     stdout_handle = None
     stdout_handle_append = False
@@ -190,16 +212,18 @@ BUILTINS = {
     "cd": _cd,
 }
 
-readline.set_completer_delims(' ')
-readline.set_completer(completer)
-readline.get_completer_delims()
+EXECS = set()
+_collect_execs()
+  
+
+readline.set_completer(_completer)
 
 def main():
     while True:
-        sys.stdout.write("$ ")
-        sys.stdout.flush()
+        #sys.stdout.write("$ ")
+        #sys.stdout.flush()
         try:
-            line = input()
+            line = input("$ ")
             user_Input = _parse_line(line)
         except EOFError:
             break
@@ -211,7 +235,7 @@ def main():
 
         args = user_Input[1:]
         
-        clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append = extract_redirections(args)
+        clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append = _extract_redirections(args)
 
         try:
             if stdout_handle_append == True:
