@@ -9,7 +9,7 @@ readline.parse_and_bind("tab: complete")
 
 '''
     Todo:
-        
+          input("$ ") oder sys.stdout.write klären
     
 '''
 
