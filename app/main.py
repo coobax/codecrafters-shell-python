@@ -5,14 +5,6 @@ import readline
 from enum import Enum, auto
 from contextlib import redirect_stdout, redirect_stderr
 
-readline.parse_and_bind("tab: complete")
-
-'''
-    Todo:
-          input("$ ") oder sys.stdout.write klären
-    
-'''
-
 class ParseState(Enum):
 
     NORMAL = auto()
@@ -79,11 +71,11 @@ def _parse_line(line):
 def _collect_execs():
     for path in os.environ.get("PATH", "").split(os.pathsep):
         try:
-            for exec in os.listdir(path):
-                full_path = os.path.join(path, exec)
+            for executable in os.listdir(path):
+                full_path = os.path.join(path, executable)
                 if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
-                    EXECS.add(exec)
-        except:
+                    EXECS.add(executable)
+        except OSError:
             continue
 
 def _completer(text, state):
@@ -94,16 +86,13 @@ def _completer(text, state):
         return matches[state] + " "
     return None
 
-def match_display_hook(substitution, matches, longest_match_length):
+def _match_display_hook(substitution, matches, longest_match_length):
     print ("")
     for match in matches:
         print (match + "  ",end="")
     print ("")
     print ("$", readline.get_line_buffer(),end="")
     readline.redisplay()
-
-readline.set_completion_display_matches_hook(match_display_hook)
-
 
 def _find_executable(exec_name):
     for path in os.environ.get("PATH", "").split(os.pathsep):
@@ -147,6 +136,7 @@ def _exec_subprocess(cmd, args, stdout=None, stderr=None):
     resolved = _find_executable(cmd)
     if resolved is None:
         print(f"{cmd}: command not found", file=stderr or sys.stderr)
+        return
     try:
         subprocess.run([cmd] + args, executable=resolved, stdout=stdout, stderr=stderr)
     except FileNotFoundError:
@@ -155,80 +145,37 @@ def _exec_subprocess(cmd, args, stdout=None, stderr=None):
         print(f"{cmd}: permission denied", file=stderr or sys.stderr)
     except OSError as e:
         print(f"Error executing {cmd}: {e}", file=stderr or sys.stderr)
-
-def _run_cmd(command_name, args, stdout=None, stderr=None):
-    if command_name in BUILTINS:
-        with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
-            BUILTINS[command_name](*args)      
-    else:
-        _exec_subprocess(command_name, args, stdout=stdout, stderr=stderr)
-
-''' my old def _extract_redirections 
-def _extract_redirections(args):
-    stderr_handle = None
-    stdout_handle = None
-    stdout_handle_append = False
-    stderr_handle_append = False
-    clean_args = []
-    i = 0
-    while i < len(args):
-        if args[i] in (">", "1>"):
-            if i + 1 < len(args):
-                stdout_handle = args[i + 1]
-                i += 2
-            else:
-                i += 1
-        elif args[i] in ( "1>>", ">>"):
-            if  i + 1 < len(args):
-                stdout_handle_append = True
-                stdout_handle = args[i + 1]
-                i +=2
-        elif args[i] == "2>":
-            if i + 1 < len(args):
-                stderr_handle = args[i + 1]
-                i += 2
-        elif args[i] == "2>>":
-            if i + 1 < len(args):
-                stderr_handle = args[i + 1]
-                stderr_handle_append = True
-                i += 2
-            else:
-                i += 1      
-        else:
-            clean_args.append(args[i])
-            i += 1
-    return clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append
-'''    
+  
 def _extract_redirections(args):
 # Operator -> (Ziel-Kanal, Append?)
-      REDIRECTS = {
-          ">":   ("stdout", False),
-          "1>":  ("stdout", False),
-          ">>":  ("stdout", True),
-          "1>>": ("stdout", True),
-          "2>":  ("stderr", False),
-          "2>>": ("stderr", True),
-      }
-      handles = {"stdout": None, "stderr": None}
-      appends = {"stdout": False, "stderr": False}
-      clean_args = []
+    REDIRECTS = {
+        ">":   ("stdout", False),
+        "1>":  ("stdout", False),
+        ">>":  ("stdout", True),
+        "1>>": ("stdout", True),
+        "2>":  ("stderr", False),
+        "2>>": ("stderr", True),
+    }
+    handles = {"stdout": None, "stderr": None}
+    appends = {"stdout": False, "stderr": False}
+    clean_args = []
 
-      i = 0
-      while i < len(args):
-          op = REDIRECTS.get(args[i])
-          if op is not None and i + 1 < len(args):
-              channel, append = op
-              handles[channel] = args[i + 1]   # Dateiname = nächstes Token
-              appends[channel] = append
-              i += 2                            # Operator + Ziel überspringen
-          else:
-              # normales Argument ODER ein Operator ohne folgenden Dateinamen:
-              # in beiden Fällen genau ein Token weiter -> kein Hängenbleiben möglich
-              clean_args.append(args[i])
-              i += 1
+    i = 0
+    while i < len(args):
+        op = REDIRECTS.get(args[i])
+        if op is not None and i + 1 < len(args):
+            channel, append = op
+            handles[channel] = args[i + 1]   # Dateiname = nächstes Token
+            appends[channel] = append
+            i += 2                            # Operator + Ziel überspringen
+        else:
+            # normales Argument ODER ein Operator ohne folgenden Dateinamen:
+            # in beiden Fällen genau ein Token weiter -> kein Hängenbleiben möglich
+            clean_args.append(args[i])
+            i += 1
 
-      return (clean_args, handles["stdout"], handles["stderr"],
-              appends["stdout"], appends["stderr"])
+    return (clean_args, handles["stdout"], handles["stderr"],
+            appends["stdout"], appends["stderr"])
 
 BUILTINS = {
     "exit": _exit,
@@ -240,9 +187,10 @@ BUILTINS = {
 
 EXECS = set()
 _collect_execs()
-  
 
+readline.parse_and_bind("tab: complete")  
 readline.set_completer(_completer)
+readline.set_completion_display_matches_hook(_match_display_hook)
 
 def main():
     while True:
@@ -250,30 +198,31 @@ def main():
         sys.stdout.flush()
         try:
             line = input()
-            user_Input = _parse_line(line)
+            user_input = _parse_line(line)
         except EOFError:
             break
 
-        if not user_Input:
+        if not user_input:
             continue
 
-        command_name = user_Input[0]
+        command_name = user_input[0]
 
-        args = user_Input[1:]
+        args = user_input[1:]
         
         clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append = _extract_redirections(args)
 
         try:
-            if stdout_handle_append == True:
+            if stdout_handle_append:
                 stdout = open(stdout_handle, "a") if stdout_handle else None
             else:
                 stdout = open(stdout_handle, "w") if stdout_handle else None
-            if stderr_handle_append == True:
+            if stderr_handle_append:
                 stderr = open(stderr_handle, "a") if stderr_handle else None
             else:
                 stderr = open(stderr_handle, "w") if stderr_handle else None
             if command_name in BUILTINS:
-                _run_cmd(command_name, clean_args, stdout=stdout, stderr=stderr)
+                with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
+                    BUILTINS[command_name](*clean_args)
             else:
                 _exec_subprocess(command_name, clean_args, stdout=stdout, stderr=stderr)
         except Exception as e:
