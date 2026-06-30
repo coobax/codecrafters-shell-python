@@ -147,27 +147,23 @@ def _exec_subprocess(cmd, args, stdout=None, stderr=None):
     resolved = _find_executable(cmd)
     if resolved is None:
         print(f"{cmd}: command not found", file=stderr or sys.stderr)
-    else:
-        with redirect_stdout(stdout), redirect_stderr(stderr):
-            try:
-                subprocess.run([cmd] + args, executable=resolved, stdout=stdout, stderr=stderr)
-            except FileNotFoundError:
-                print(f"{cmd}: command not found")
-            except PermissionError:
-                print(f"{cmd}: permission denied")
-            except OSError as e:
-                print(f"Error executing {cmd}: {e}")
+    try:
+        subprocess.run([cmd] + args, executable=resolved, stdout=stdout, stderr=stderr)
+    except FileNotFoundError:
+        print(f"{cmd}: command not found", file=stderr or sys.stderr)
+    except PermissionError:
+        print(f"{cmd}: permission denied", file=stderr or sys.stderr)
+    except OSError as e:
+        print(f"Error executing {cmd}: {e}", file=stderr or sys.stderr)
 
 def _run_cmd(command_name, args, stdout=None, stderr=None):
-    try:
-        if command_name in BUILTINS:
-            with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
-                BUILTINS[command_name](*args)      
-        else:
-            _exec_subprocess(command_name, args, stdout=stdout, stderr=stderr)
-    except Exception as e:
-        raise e
-    
+    if command_name in BUILTINS:
+        with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
+            BUILTINS[command_name](*args)      
+    else:
+        _exec_subprocess(command_name, args, stdout=stdout, stderr=stderr)
+
+''' my old def _extract_redirections 
 def _extract_redirections(args):
     stderr_handle = None
     stdout_handle = None
@@ -202,7 +198,37 @@ def _extract_redirections(args):
             clean_args.append(args[i])
             i += 1
     return clean_args, stdout_handle, stderr_handle, stdout_handle_append, stderr_handle_append
+'''    
+def _extract_redirections(args):
+# Operator -> (Ziel-Kanal, Append?)
+      REDIRECTS = {
+          ">":   ("stdout", False),
+          "1>":  ("stdout", False),
+          ">>":  ("stdout", True),
+          "1>>": ("stdout", True),
+          "2>":  ("stderr", False),
+          "2>>": ("stderr", True),
+      }
+      handles = {"stdout": None, "stderr": None}
+      appends = {"stdout": False, "stderr": False}
+      clean_args = []
 
+      i = 0
+      while i < len(args):
+          op = REDIRECTS.get(args[i])
+          if op is not None and i + 1 < len(args):
+              channel, append = op
+              handles[channel] = args[i + 1]   # Dateiname = nächstes Token
+              appends[channel] = append
+              i += 2                            # Operator + Ziel überspringen
+          else:
+              # normales Argument ODER ein Operator ohne folgenden Dateinamen:
+              # in beiden Fällen genau ein Token weiter -> kein Hängenbleiben möglich
+              clean_args.append(args[i])
+              i += 1
+
+      return (clean_args, handles["stdout"], handles["stderr"],
+              appends["stdout"], appends["stderr"])
 
 BUILTINS = {
     "exit": _exit,
