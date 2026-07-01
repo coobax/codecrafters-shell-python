@@ -4,7 +4,8 @@ import subprocess
 import readline
 from enum import Enum, auto
 from contextlib import redirect_stdout, redirect_stderr
-
+#from dataclasses import dataclass, field
+'''In Modulen und Klassen neu schreiben'''
 class ParseState(Enum):
 
     NORMAL = auto()
@@ -233,7 +234,6 @@ def main():
                 stdout.close()
             if stderr:
                 stderr.close()
-
-        
+    
 if __name__ == "__main__":
     main()
