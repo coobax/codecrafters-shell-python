@@ -1,0 +1,1 @@
+# shell/ package marker — makes this directory importable via `import shell`

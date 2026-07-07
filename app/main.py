@@ -227,7 +227,7 @@ def main():
             else:
                 _exec_subprocess(command_name, clean_args, stdout=stdout, stderr=stderr)
         except Exception as e:
-            print(f"Error executing {command_name}: {e}", file=stderr or sys.stderr) 
+            print(f"Error executing {command_name}: {e}", file=stderr or sys.stderr)  
             continue
         finally:
             if stdout:
