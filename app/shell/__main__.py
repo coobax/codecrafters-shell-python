@@ -10,9 +10,9 @@ import sys
 from contextlib import redirect_stdout, redirect_stderr
 
 from .completion import init_readline
-from .parsing import parse_line, extract_redirections
+from .parsing import parse_line, extract_redirections, extract_pipe_segments
 from .command_resolution import collect_execs, BUILTINS
-from .execution import exec_subprocess
+from .execution import exec_subprocess, exec_pipe
 
 
 def main() -> None:
@@ -39,7 +39,7 @@ def main() -> None:
         command_name = user_input[0]
         args = user_input[1:]
         redirections = extract_redirections(args)
-
+        
         stdout = stderr = None
         try:
             if redirections.stdout_append:
@@ -51,14 +51,18 @@ def main() -> None:
             else:
                 stderr = open(redirections.stderr_target, "w") if redirections.stderr_target else None
 
-            if command_name in BUILTINS:
-                # redirect_stdout/stderr wrap print() calls inside builtins
-                # transparently — the builtins themselves don't need to know
-                # about file handles
-                with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
-                    BUILTINS[command_name](*redirections.clean_args)
+            if "|" in user_input:
+                segments= extract_pipe_segments(user_input)
+                exec_pipe(segments)
             else:
-                exec_subprocess(command_name, redirections.clean_args, stdout=stdout, stderr=stderr)
+                if command_name in BUILTINS:
+                    # redirect_stdout/stderr wrap print() calls inside builtins
+                    # transparently — the builtins themselves don't need to know
+                    # about file handles
+                    with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
+                        BUILTINS[command_name](*redirections.clean_args)
+                else:
+                    exec_subprocess(command_name, redirections.clean_args, stdout=stdout, stderr=stderr)
         except Exception as e:
             print(f"Error executing {command_name}: {e}", file=stderr or sys.stderr)
             continue

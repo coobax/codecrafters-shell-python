@@ -8,9 +8,24 @@ that can occur between resolution and execution.
 Depends on: command_resolution (find_executable).
 """
 
-import subprocess
 import sys
 from .command_resolution import find_executable
+from subprocess import Popen, PIPE, run
+
+
+def exec_pipe(segments: list[list[str]]):
+    proc = []
+    i=0
+    while i < len(segments):
+        if i == 0:
+            proc.append(Popen(segments[i], stdout=PIPE))
+        else:
+            proc.append(Popen(segments[i], stdin=proc[i-1].stdout, stdout=None))
+            proc[i-1].stdout.close()
+            proc[i].wait()
+        i=i+1
+
+
 
 def exec_subprocess(cmd: str, args: list[str], stdout=None, stderr=None) -> None:
     """
@@ -32,7 +47,7 @@ def exec_subprocess(cmd: str, args: list[str], stdout=None, stderr=None) -> None
         print(f"{cmd}: command not found", file=stderr or sys.stderr)
         return
     try:
-        subprocess.run([cmd] + args, executable=resolved, stdout=stdout, stderr=stderr)
+        run([cmd] + args, executable=resolved, stdout=stdout, stderr=stderr)
     except FileNotFoundError:
         print(f"{cmd}: command not found", file=stderr or sys.stderr)
     except PermissionError:

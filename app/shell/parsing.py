@@ -25,7 +25,6 @@ class ParseState(Enum):
     IN_DOUBLE = auto()
     ESCAPE = auto()
 
-
 @dataclass
 class RedirectionResult:
     """
@@ -78,6 +77,11 @@ def parse_line(line: str) -> list[str]:
                     state = ParseState.IN_SINGLE
                 elif ch == '"':
                     state = ParseState.IN_DOUBLE
+                elif ch == '|':
+                    if current:
+                        tokens.append("".join(current))
+                    tokens.append("".join("|"))
+                    current = []
                 elif ch.isspace():
                     if current:
                         tokens.append("".join(current))
@@ -116,6 +120,7 @@ def parse_line(line: str) -> list[str]:
                     # Outside quotes: backslash makes ANY next char literal
                     current.append(ch)
                     state = ParseState.NORMAL
+
 
     # Flush the last token if the line didn't end on whitespace
     if current:
@@ -176,3 +181,21 @@ def extract_redirections(args: list[str]) -> RedirectionResult:
         stdout_append=appends["stdout"],
         stderr_append=appends["stderr"],
     )
+
+
+def extract_pipe_segments(args: list[str]) -> list[list[str]]:
+    segments = []
+    current_segment = []
+
+    for arg in args:
+        if arg == "|":
+            if current_segment:
+                segments.append(current_segment)
+                current_segment = []
+        else:
+            current_segment.append(arg)
+
+    if current_segment:
+        segments.append(current_segment)
+
+    return segments
