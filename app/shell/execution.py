@@ -8,22 +8,58 @@ that can occur between resolution and execution.
 Depends on: command_resolution (find_executable).
 """
 
+import os
 import sys
-from .command_resolution import find_executable
+from .command_resolution import find_executable, BUILTINS
 from subprocess import Popen, PIPE, run
 
 
 def exec_pipe(segments: list[list[str]]):
-    proc = []
-    i=0
-    while i < len(segments):
-        if i == 0:
-            proc.append(Popen(segments[i], stdout=PIPE))
+    prev_stdin = None
+    for i, segment in enumerate(segments):
+        cmd = segment[0]
+        args = segment[1:]
+        is_last = (i == len(segments) - 1)
+        r, w = -1, -1
+        if cmd in BUILTINS:
+            if not is_last:
+                r, w = os.pipe()
+
+            pid = os.fork()
+
+            if pid == 0:
+                # Child-Process
+                if prev_stdin is not None:
+                    os.dup2(prev_stdin.fileno(), 0)
+                    prev_stdin.close()
+
+                if not is_last:
+                    os.close(r)       # Child does not read
+                    os.dup2(w, 1)     # stdout → Pipe
+                    os.close(w)       # Origin FD not needed anymore
+
+                BUILTINS[cmd](*args)
+                os._exit(0)           # Kill Child-Process
+            else:
+                #Parent-Process
+                if prev_stdin is not None:
+                    prev_stdin.close()
+
+                if not is_last:
+                    os.close(w)       # Parent does not write
+                    prev_stdin = os.fdopen(r) # Fill prev_stdin for following proc
+                else:
+                    os.waitpid(pid, 0) # Wait for Child-Process
         else:
-            proc.append(Popen(segments[i], stdin=proc[i-1].stdout, stdout=None))
-            proc[i-1].stdout.close()
-            proc[i].wait()
-        i=i+1
+            proc = Popen(segment, stdin=prev_stdin, stdout=PIPE if not is_last else None)
+
+            if prev_stdin is not None:
+                prev_stdin.close()    # SIGPIPE ermöglichen
+
+            if is_last:
+                proc.wait()
+            else:
+                prev_stdin = proc.stdout
 
 
 
