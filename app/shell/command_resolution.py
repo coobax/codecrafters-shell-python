@@ -13,6 +13,7 @@ No dependencies on other shell modules. Only stdlib (sys, os).
 
 import sys
 import os
+import readline
 from typing import Callable
 
 
@@ -108,6 +109,19 @@ def _pwd() -> None:
     """Print the current working directory."""
     print(os.getcwd())
 
+def _history(*args: str) -> None:
+    if args and args[0] == '-r':
+        readline.read_history_file(args[1])
+    else:
+        for n in range(1, readline.get_current_history_length() + 1):
+           history_item = readline.get_history_item(n)
+           print("    {:>4}  {:<}".format(n, history_item))
+
+            
+    
+    
+    
+
 
 # -- Public registries --
 
@@ -117,6 +131,7 @@ BUILTINS = {
     "type": _type,
     "pwd":  _pwd,
     "cd":   _cd,
+    "history": _history,
 }
 
 EXECS: set[str] = set()
