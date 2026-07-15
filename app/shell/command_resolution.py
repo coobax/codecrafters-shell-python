@@ -112,10 +112,12 @@ def _pwd() -> None:
 def _history(*args: str) -> None:
     if args and args[0] == '-r':
         readline.read_history_file(args[1])
+    elif args and args[0]== '-w':
+        readline.write_history_file(args[1])
     else:
         for n in range(1, readline.get_current_history_length() + 1):
            history_item = readline.get_history_item(n)
-           print("    {:>4}  {:<}".format(n, history_item))
+           print("{:>4}  {}".format(n, history_item))
 
             
     
