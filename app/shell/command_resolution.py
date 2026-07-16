@@ -160,10 +160,8 @@ def append_history(path:str) -> None:
 
 def load_history():
     histfile = os.environ.get('HISTFILE')
-
-    if histfile is None:
-        return
-    
+    if not histfile:
+        return  
     try:
         readline.read_history_file(histfile)
     except FileNotFoundError:
