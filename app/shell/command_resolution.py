@@ -129,25 +129,36 @@ def _history(*args: str) -> None:
 
     flag = args[0] if args else None
 
-    if flag not in _HISTORY_FLAGS:
+    if flag is None:
         length = readline.get_current_history_length()
 
         for n in range(1, length + 1):
             print(f"{n:>4}  {readline.get_history_item(n)}")
         return
-
-    if len(args) < 2:
-        print(f"history: {flag}: option requires an argument")
+    elif flag not in _HISTORY_FLAGS:
+        print(f"history {flag}: No valid option" )
         return
 
-    path = args[1]
+    if len(args) > 2:
+        print(f"history {flag} {args}: Too many arguments")
+        return
+    elif len(args) < 2 and flag != '-a':
+        print(f"history {flag}: Option requires an argument")
+        return
+    
+    path = args[1] if args else None
     try:
         _HISTORY_FLAGS[flag](path)
     except FileNotFoundError:
-
-        print(f"history: {path}: No such file or directory")
+        print(f"history {flag} {path}: No such file or directory")
     except PermissionError:
-        print(f"history: {path}: Permission denied")
+        print(f"history {flag} {path}: Permission denied")
+
+def append_history(path:str):
+    current_history_length = readline.get_current_history_length()
+    n = current_history_length - _history_state["last_appended"]
+    readline.append_history_file(n, path)
+    _history_state["last_appended"] = current_history_length
 
 # -- Public registries --
 
@@ -165,4 +176,9 @@ EXECS: set[str] = set()
 _HISTORY_FLAGS = {
     "-r": readline.read_history_file,   # read file → append its lines to the in-memory list
     "-w": readline.write_history_file,  # write the list to file (creates it if absent, "w" mode)
+    "-a": append_history,
+}
+
+_history_state = {
+    "last_appended": 0,
 }

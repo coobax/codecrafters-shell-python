@@ -1,78 +1,21 @@
-_exit()
-exit
-quit
-_exit
-exit
-exit()
-def _history(*args: str) -> None:
-    if args == '-r':
-        readline.read_history_file()
-    else:
-        for n in range(1, readline.get_current_history_length()):
-           history_item = readline.get_history_item(n)
-           print('  ',n,'',history_item)
-history
-_history
-_exit
-exit
-exit()
-readline.read_history_file(/home/gordonfreeman/Coding/codecrafters/codecrafters-shell-python/app/shell/.history)
-readline.read_history_file("/home/gordonfreeman/Coding/codecrafters/codecrafters-shell-python/app/shell/.history")
 echo hallo
 echo welt
-for n in range(1, readline.get_current_history_length(), 1):
-           history_item = readline.get_history_item(n)
-           print('  ',n,'',history_item)
-print(readline.get_history_item(12))
-print(readline.get_history_item(20))
-print(readline.get_history_item(22))
-x = readline.get_history_item(22))
-x = readline.get_history_item(22)
-print(x)
-print("{0:<2}{}".format(x))
-print("{0:<2}{}".format("22", x))
-print("{0:<2}".format(x))
-print("{0:<22}".format(x))
-print("{:<22}".format(x))
-print("{:<20}".format(x))
-print("{:>20}".format(x))
-print("{:<2}".format("1"))
-print("{:<2}".format("11"))
-print("{:>2}".format("1"))
-print("{:>2}".format("11"))
-print("{:>3}".format("1"))
-print("{:>3}".format("11"))
-print("{:>3}".format("111"))
-print("{:>3}".format("1111"))
-print("{:>3}".format("111111111"))
-print("{:>4}".format("1111"))
-print("{:>4}".format("111"))
-print("{:>4}".format("11"))
-print("{:>4}".format("1"))
-for n in range(1, readline.get_current_history_length() + 1):
-           history_item = readline.get_history_item(n)
-           print("{:>4}{:<}".format(n, history_item))
-           print("{:>4}{4:<}".format(n, history_item))
-           print("{:>4}  {:<}".format(n, history_item))
-for n in range(1, readline.get_current_history_length() + 1):
-           history_item = readline.get_history_item(n)
-           print("{:>4}  {:<}".format(n, history_item))
-1
-2
-3
-4
-12
-2
-3
-4
-1
-23
-for n in range(1, readline.get_current_history_length() + 1):
-           history_item = readline.get_history_item(n)
-           print("  {:>4}  {:<}".format(n, history_item))
-exit()
-readline.read_history_file(/home/gordonfreeman/Coding/codecrafters/codecrafters-shell-python/app/shell/.history)
-readline.read_history_file("/home/gordonfreeman/Coding/codecrafters/codecrafters-shell-python/app/shell/.history")
-echo hallo
-echo welt
-readline.write_history_file("/home/gordonfreeman/Coding/codecrafters/codecrafters-shell-python/app/shell/.history")
+_history_state = {"last_appended": 0}
+readline.append_history_file(n, path)
+n = current_history_length - _history_state["last_appended"]
+readline.append_history_file(n, path)
+_history_state = {"last_appended": 0}
+readline.append_history_file(n, path)
+n = current_history_length - _history_state["last_appended"]
+readline.append_history_file(n, path)
+print(n, path)
+print(_history_state)
+_history_state["last_appended"] = current_history_length
+print(_history_state)
+current_history_length = readline.get_current_history_length()
+    n = current_history_length - _history_state["last_appended"]
+    readline.append_history_file(n, path)
+    _history_state["last_appended"] = current_history_length
+current_history_length = readline.get_current_history_length()
+n = current_history_length - _history_state["last_appended"]
+readline.append_history_file(n, path)
