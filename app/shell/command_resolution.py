@@ -110,20 +110,44 @@ def _pwd() -> None:
     print(os.getcwd())
 
 def _history(*args: str) -> None:
-    if args and args[0] == '-r':
-        readline.read_history_file(args[1])
-    elif args and args[0]== '-w':
-        readline.write_history_file(args[1])
-    else:
-        for n in range(1, readline.get_current_history_length() + 1):
-           history_item = readline.get_history_item(n)
-           print("{:>4}  {}".format(n, history_item))
+    """
+    Implement the `history` builtin.
 
-            
-    
-    
-    
+    Dispatch on the first argument:
 
+    - No known flag (bare `history`, or an unrecognized token): print the
+      in-memory history list, numbered 1..N right-aligned — bash's format.
+    - `-r <path>`: load a file and *append* its lines to the history.
+    - `-w <path>`: write the current history to the file (created if absent).
+
+    A known flag *without* a path is a usage error, not a silent no-op —
+    every function here needs a target, so we report the missing argument.
+
+    Args:
+        args: Tokens after the command name, e.g. ("-r", "/tmp/hist").
+    """
+
+    flag = args[0] if args else None
+
+    if flag not in _HISTORY_FLAGS:
+        length = readline.get_current_history_length()
+
+        for n in range(1, length + 1):
+            print(f"{n:>4}  {readline.get_history_item(n)}")
+        return
+
+    if len(args) < 2:
+        print(f"history: {flag}: option requires an argument")
+        return
+
+    path = args[1]
+    try:
+        _HISTORY_FLAGS[flag](path)
+    except FileNotFoundError:
+
+        print(f"history: {path}: No such file or directory")
+    except PermissionError:
+        print(f"history: {path}: Permission denied")
 
 # -- Public registries --
 
@@ -137,3 +161,8 @@ BUILTINS = {
 }
 
 EXECS: set[str] = set()
+
+_HISTORY_FLAGS = {
+    "-r": readline.read_history_file,   # read file → append its lines to the in-memory list
+    "-w": readline.write_history_file,  # write the list to file (creates it if absent, "w" mode)
+}
