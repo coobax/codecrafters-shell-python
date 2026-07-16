@@ -164,7 +164,16 @@ def load_history():
         return  
     try:
         readline.read_history_file(histfile)
-    except (FileNotFoundError, OSError):
+    except OSError:
+        pass
+
+def save_history():
+    histfile = os.environ.get('HISTFILE')
+    if not histfile:
+        return
+    try:
+        readline.write_history_file(histfile)
+    except OSError:
         pass
 
 # -- Public registries --
