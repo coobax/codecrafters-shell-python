@@ -148,15 +148,26 @@ def _history(*args: str) -> None:
     try:
         _HISTORY_FLAGS[flag](path)
     except FileNotFoundError:
-        print(f"history {flag} {path}: No such file or directory")
+        print(f"Could not load/write history: {path}: No such file or directory")
     except PermissionError:
-        print(f"history {flag} {path}: Permission denied")
+        print(f"Could not load/write history: {path}: Permission denied")
 
-def append_history(path:str):
+def append_history(path:str) -> None:
     current_history_length = readline.get_current_history_length()
     n = current_history_length - _history_state["last_appended"]
     readline.append_history_file(n, path)
     _history_state["last_appended"] = current_history_length
+
+def load_history():
+    histfile = os.environ.get('HISTFILE')
+
+    if histfile is None:
+        return
+    
+    try:
+        readline.read_history_file(histfile)
+    except FileNotFoundError:
+        pass
 
 # -- Public registries --
 

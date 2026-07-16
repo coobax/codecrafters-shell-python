@@ -11,7 +11,7 @@ from contextlib import redirect_stdout, redirect_stderr
 
 from .completion import init_readline
 from .parsing import parse_line, extract_redirections, extract_pipe_segments
-from .command_resolution import collect_execs, BUILTINS
+from .command_resolution import collect_execs, load_history, BUILTINS
 from .execution import exec_subprocess, exec_pipe
 
 
@@ -24,6 +24,7 @@ def main() -> None:
     """
     collect_execs()
     init_readline()
+    load_history()
 
     while True:
         try:
