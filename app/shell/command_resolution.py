@@ -164,7 +164,7 @@ def load_history():
         return  
     try:
         readline.read_history_file(histfile)
-    except FileNotFoundError:
+    except (FileNotFoundError, OSError):
         pass
 
 # -- Public registries --
