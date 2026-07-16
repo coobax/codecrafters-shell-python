@@ -114,14 +114,12 @@ def _history(*args: str) -> None:
     Implement the `history` builtin.
 
     Dispatch on the first argument:
+    - No args: print the in-memory list, numbered 1..N (bash format).
+    - `-r <path>`: read a file, append its lines to the history.
+    - `-w <path>`: write the whole list to the file (created if absent).
+    - `-a <path>`: append only entries added since the last `-a` to the file.
 
-    - No known flag (bare `history`, or an unrecognized token): print the
-      in-memory history list, numbered 1..N right-aligned — bash's format.
-    - `-r <path>`: load a file and *append* its lines to the history.
-    - `-w <path>`: write the current history to the file (created if absent).
-
-    A known flag *without* a path is a usage error, not a silent no-op —
-    every function here needs a target, so we report the missing argument.
+    Unknown flag or missing/extra path is a usage error, not a silent no-op.
 
     Args:
         args: Tokens after the command name, e.g. ("-r", "/tmp/hist").
@@ -140,13 +138,13 @@ def _history(*args: str) -> None:
         return
 
     if len(args) > 2:
-        print(f"history {flag} {args}: Too many arguments")
+        print(f"history {flag} {' '.join(args[2:])}: Too many arguments")
         return
-    elif len(args) < 2 and flag != '-a':
+    elif len(args) < 2:
         print(f"history {flag}: Option requires an argument")
         return
     
-    path = args[1] if args else None
+    path = args[1]
     try:
         _HISTORY_FLAGS[flag](path)
     except FileNotFoundError:
