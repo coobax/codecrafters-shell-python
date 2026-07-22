@@ -7,35 +7,27 @@ Searches BUILTINS first, then EXECS. Handles both single matches
 Depends on: command_resolution (BUILTINS, EXECS).
 """
 
+from os import listdir
 import readline
 from .command_resolution import BUILTINS, EXECS
 from collections.abc import Sequence
 
 
-def _completer(text: str, state: int) -> str | None:
-    """
-    Readline calls this repeatedly with state=0, 1, 2, ... until it
-    returns None. Each call must return the next matching command name.
 
-    Lookup order matches bash: builtins first, then PATH executables.
-    If builtins produce matches, PATH is skipped entirely — this avoids
-    mixing two different namespaces in one completion list.
 
-    Args:
-        text: The partial word the user has typed so far.
-        state: Readline's index into the match list (0-based).
 
-    Returns:
-        The next matching command + trailing space, or None when exhausted.
-    """
-    matches = [cmd for cmd in BUILTINS if cmd.startswith(text)]
-    if not matches:
-        matches = [cmd for cmd in EXECS if cmd.startswith(text)]
+def _completer(text:str, state: int) -> str | None:
+    all_cmds = BUILTINS.keys() | EXECS
+    if readline.get_begidx() == 0:
+        matches = sorted(cmd for cmd in all_cmds if cmd.startswith(text))
+    else:
+        matches = sorted(cmd for cmd in listdir(".") if cmd.startswith(text))
 
     if state < len(matches):
         # Trailing space signals readline that the token is complete —
         # the cursor jumps past the word so the user can type the next arg
         return matches[state] + " "
+    
     return None
 
 
@@ -71,3 +63,4 @@ def init_readline() -> None:
     readline.parse_and_bind("tab: complete")
     readline.set_completer(_completer)
     readline.set_completion_display_matches_hook(_match_display_hook)
+

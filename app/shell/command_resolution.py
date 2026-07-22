@@ -73,7 +73,6 @@ def _type(cmd_name: str) -> None:
     else:
         print(f"{cmd_name}: not found")
 
-
 def _cd(*args: str) -> None:
     """
     Change the current working directory.
@@ -94,16 +93,13 @@ def _cd(*args: str) -> None:
     except OSError:
         print(f"cd: {target}: No such file or directory")
 
-
 def _exit(code: str = "0") -> None:
     """Exit the shell with the given status code (default 0)."""
     sys.exit(int(code))
 
-
 def _echo(*args: str) -> None:
     """Print arguments separated by spaces, followed by a newline."""
     print(" ".join(args))
-
 
 def _pwd() -> None:
     """Print the current working directory."""
