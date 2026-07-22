@@ -24,9 +24,10 @@ def _completer(text:str, state: int) -> str | None:
         matches = sorted(cmd for cmd in listdir(".") if cmd.startswith(text))
 
     if state < len(matches):
-        # Trailing space signals readline that the token is complete —
-        # the cursor jumps past the word so the user can type the next arg
-        return matches[state] + " "
+        # Trailing space only when the match is unambiguous — the token is
+        # finished and the user can move on. With multiple candidates the
+        # word is still incomplete, so no space.
+        return matches[state] + (" " if len(matches) == 1 else "")
     
     return None
 
@@ -63,4 +64,3 @@ def init_readline() -> None:
     readline.parse_and_bind("tab: complete")
     readline.set_completer(_completer)
     readline.set_completion_display_matches_hook(_match_display_hook)
-
