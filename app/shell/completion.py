@@ -7,7 +7,7 @@ Searches BUILTINS first, then EXECS. Handles both single matches
 Depends on: command_resolution (BUILTINS, EXECS).
 """
 
-from os import listdir
+import os
 import readline
 from .command_resolution import BUILTINS, EXECS
 from collections.abc import Sequence
@@ -17,12 +17,21 @@ from collections.abc import Sequence
 
 
 def _completer(text:str, state: int) -> str | None:
-    all_cmds = BUILTINS.keys() | EXECS
+    #print(f"\n{text=} {readline.get_begidx()=} {state} {readline.get_endidx()=} {readline.get_line_buffer()=} {os.path.dirname(text)}")
     if readline.get_begidx() == 0:
-        matches = sorted(cmd for cmd in all_cmds if cmd.startswith(text))
+        matches = sorted(cmd for cmd in BUILTINS.keys() | EXECS if cmd.startswith(text))
     else:
-        matches = sorted(cmd for cmd in listdir(".") if cmd.startswith(text))
-
+        dirpart = os.path.dirname(text)
+        basepart = os.path.basename(text)
+        try:    
+            entries = os.listdir(dirpart or ".")
+        except OSError:
+            entries = []
+        matches = sorted(
+                    os.path.join(dirpart, entry) 
+                    for entry in entries 
+                    if entry.startswith(basepart)
+                    )
     if state < len(matches):
         # Trailing space only when the match is unambiguous — the token is
         # finished and the user can move on. With multiple candidates the
@@ -64,3 +73,4 @@ def init_readline() -> None:
     readline.parse_and_bind("tab: complete")
     readline.set_completer(_completer)
     readline.set_completion_display_matches_hook(_match_display_hook)
+    readline.set_completer_delims(" \t\n<>|&;")

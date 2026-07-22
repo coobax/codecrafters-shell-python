@@ -80,15 +80,16 @@ def exec_pipe(segments: list[list[str]]):
                 BUILTINS[cmd](*args)
                 os._exit(0)           # Kill Child-Process
             else:
-                #Parent-Process
+                # Parent-Process
                 if prev_stdin is not None:
                     prev_stdin.close()
 
                 if not is_last:
                     os.close(w)       # Parent does not write
-                    prev_stdin = os.fdopen(r) # Fill prev_stdin for following proc
+                    prev_stdin = os.fdopen(r)  #Fill prev_stdin for following proc
                 else:
-                    os.waitpid(pid, 0) # Wait for Child-Process
+                    # Wait for Child-Process
+                    os.waitpid(pid, 0)
         else:
             proc = Popen(segment, stdin=prev_stdin, stdout=PIPE if not is_last else None)
 
@@ -105,18 +106,15 @@ def exec_pipe(segments: list[list[str]]):
 def exec_subprocess(cmd: str, args: list[str], stdout=None, stderr=None) -> None:
     """
     Run an external command as a child process.
- 
     Resolves cmd to a full path first. If not found, prints an error
     to stderr (or the redirected stderr handle) and returns — no
     exception raised, matching how bash handles unknown commands.
- 
     Args:
         cmd: Bare command name (e.g. "cat").
         args: Arguments to pass to the command.
         stdout: File handle for stdout redirection, or None for sys.stdout.
         stderr: File handle for stderr redirection, or None for sys.stderr.
     """
-
     resolved = find_executable(cmd)
     if resolved is None:
         print(f"{cmd}: command not found", file=stderr or sys.stderr)
