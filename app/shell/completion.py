@@ -17,7 +17,6 @@ from collections.abc import Sequence
 
 
 def _completer(text:str, state: int) -> str | None:
-    #print(f"\n{text=} {readline.get_begidx()=} {state} {readline.get_endidx()=} {readline.get_line_buffer()=} {os.path.dirname(text)}")
     if readline.get_begidx() == 0:
         matches = sorted(cmd for cmd in BUILTINS.keys() | EXECS if cmd.startswith(text))
     else:
@@ -41,7 +40,6 @@ def _completer(text:str, state: int) -> str | None:
         else:
             suffix = " "
         return match + suffix
-    
     return None
 
 
