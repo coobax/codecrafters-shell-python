@@ -33,10 +33,14 @@ def _completer(text:str, state: int) -> str | None:
                     if entry.startswith(basepart)
                     )
     if state < len(matches):
-        # Trailing space only when the match is unambiguous — the token is
-        # finished and the user can move on. With multiple candidates the
-        # word is still incomplete, so no space.
-        return matches[state] + (" " if len(matches) == 1 else "")
+        match = matches[state]
+        if len(matches) != 1:
+            suffix = ""
+        elif os.path.isdir(match):
+            suffix = "/"
+        else:
+            suffix = " "
+        return match + suffix
     
     return None
 
