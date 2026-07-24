@@ -13,9 +13,6 @@ from .command_resolution import BUILTINS, EXECS
 from collections.abc import Sequence
 
 
-
-
-
 def _completer(text:str, state: int) -> str | None:
     if readline.get_begidx() == 0:
         matches = sorted(cmd for cmd in BUILTINS.keys() | EXECS if cmd.startswith(text))
@@ -57,8 +54,12 @@ def _match_display_hook(substitution: str, matches: Sequence[str], longest_match
             required by readline's callback signature).
     """
     print("")
+    matches = sorted(matches)
     for match in matches:
-        print(match + "  ", end="")
+        if os.path.isdir(match):
+            print(match + "/", end="  ")
+        else:
+            print(match, end="  ")
     print("")
     # Re-draw prompt + current input so the user sees where they are
     print("$ ", readline.get_line_buffer(), sep="", end="")
