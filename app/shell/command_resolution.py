@@ -172,6 +172,11 @@ def save_history():
     except OSError:
         pass
 
+def _jobs() -> None:
+    return None
+
+
+
 # -- Public registries --
 
 BUILTINS = {
@@ -181,6 +186,7 @@ BUILTINS = {
     "pwd":  _pwd,
     "cd":   _cd,
     "history": _history,
+    "jobs": _jobs,
 }
 
 EXECS: set[str] = set()
