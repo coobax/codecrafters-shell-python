@@ -29,7 +29,6 @@ def main() -> None:
 
     while True:
         try:
-            # input() handles prompt display + flush + reading in one call
             line = input("$ ")
             user_input = parse_line(line)
         except EOFError:
@@ -58,9 +57,6 @@ def main() -> None:
                 exec_pipe(segments)
             else:
                 if command_name in BUILTINS:
-                    # redirect_stdout/stderr wrap print() calls inside builtins
-                    # transparently — the builtins themselves don't need to know
-                    # about file handles
                     with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):
                         BUILTINS[command_name](*redirections.clean_args)
                 else:
@@ -69,7 +65,6 @@ def main() -> None:
             print(f"Error executing {command_name}: {e}", file=stderr or sys.stderr)
             continue
         finally:
-            # Always close file handles to flush writes and free resources
             if stdout:
                 stdout.close()
             if stderr:

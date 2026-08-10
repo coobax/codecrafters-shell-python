@@ -61,7 +61,6 @@ def _match_display_hook(substitution: str, matches: Sequence[str], longest_match
         else:
             print(match, end="  ")
     print("")
-    # Re-draw prompt + current input so the user sees where they are
     print("$ ", readline.get_line_buffer(), sep="", end="")
     readline.redisplay()
 

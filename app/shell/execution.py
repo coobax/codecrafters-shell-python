@@ -67,34 +67,31 @@ def exec_pipe(segments: list[list[str]]):
             pid = os.fork()
 
             if pid == 0:
-                # Child-Process
                 if prev_stdin is not None:
                     os.dup2(prev_stdin.fileno(), 0)
                     prev_stdin.close()
 
                 if not is_last:
-                    os.close(r)       # Child does not read
-                    os.dup2(w, 1)     # stdout → Pipe
-                    os.close(w)       # Origin FD not needed anymore
+                    os.close(r)       
+                    os.dup2(w, 1)    
+                    os.close(w)      
 
                 BUILTINS[cmd](*args)
-                os._exit(0)           # Kill Child-Process
+                os._exit(0)          
             else:
-                # Parent-Process
                 if prev_stdin is not None:
                     prev_stdin.close()
 
                 if not is_last:
-                    os.close(w)       # Parent does not write
-                    prev_stdin = os.fdopen(r)  #Fill prev_stdin for following proc
+                    os.close(w)       
+                    prev_stdin = os.fdopen(r)  
                 else:
-                    # Wait for Child-Process
                     os.waitpid(pid, 0)
         else:
             proc = Popen(segment, stdin=prev_stdin, stdout=PIPE if not is_last else None)
 
             if prev_stdin is not None:
-                prev_stdin.close()    # SIGPIPE ermöglichen
+                prev_stdin.close()    
 
             if is_last:
                 proc.wait()

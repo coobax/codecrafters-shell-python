@@ -63,9 +63,6 @@ def parse_line(line: str) -> list[str]:
     state = ParseState.NORMAL
     current = []
     tokens = []
-    # Track whether we entered ESCAPE from inside double quotes —
-    # because escape rules differ: in double quotes only \\, ", $, newline
-    # are special; outside, everything after \\ is literal
     escape_from_double = False
 
     for ch in line:
@@ -106,9 +103,6 @@ def parse_line(line: str) -> list[str]:
 
             case ParseState.ESCAPE:
                 if escape_from_double:
-                    # POSIX rule: inside double quotes, backslash only
-                    # escapes \\, ", $, and newline. Everything else
-                    # keeps the backslash as a literal character.
                     if ch in ('\\', '"', '$', '\n'):
                         current.append(ch)
                     else:
@@ -117,22 +111,14 @@ def parse_line(line: str) -> list[str]:
                     state = ParseState.IN_DOUBLE
                     escape_from_double = False
                 else:
-                    # Outside quotes: backslash makes ANY next char literal
                     current.append(ch)
                     state = ParseState.NORMAL
-
-
-    # Flush the last token if the line didn't end on whitespace
     if current:
         tokens.append("".join(current))
 
     return tokens
 
 
-# -- Redirection operator lookup table --
-# Maps operator strings to (channel, append?) tuples.
-# Defined at module level because it's constant — no reason to rebuild
-# it on every call to extract_redirections().
 _REDIRECT_OPERATORS = {
     ">":   ("stdout", False),
     "1>":  ("stdout", False),
@@ -165,12 +151,10 @@ def extract_redirections(args: list[str]) -> RedirectionResult:
         op = _REDIRECT_OPERATORS.get(args[i])
         if op is not None and i + 1 < len(args):
             channel, append = op
-            handles[channel] = args[i + 1]   # next token = filename
+            handles[channel] = args[i + 1]  
             appends[channel] = append
-            i += 2                            # skip operator + target
+            i += 2                           
         else:
-            # Regular argument OR an operator without a following filename —
-            # either way, advance by exactly one to avoid infinite loops
             clean_args.append(args[i])
             i += 1
 

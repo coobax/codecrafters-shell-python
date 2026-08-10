@@ -52,16 +52,8 @@ def collect_execs() -> None:
                 if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
                     EXECS.add(executable)
         except OSError:
-            # Directory doesn't exist or isn't readable — skip silently,
-            # just like bash does with broken PATH entries
             continue
 
-
-# -- Builtin command implementations --
-# Each function's signature mirrors how it's called from the main loop:
-# BUILTINS[command_name](*clean_args)
-# Output goes through print() so redirect_stdout in __main__.py can
-# capture it transparently — no file handle parameter needed.
 
 def _type(cmd_name: str) -> None:
     """Report whether cmd_name is a builtin, an executable, or unknown."""
@@ -176,9 +168,6 @@ def _jobs() -> None:
     return None
 
 
-
-# -- Public registries --
-
 BUILTINS = {
     "exit": _exit,
     "echo": _echo,
@@ -192,8 +181,8 @@ BUILTINS = {
 EXECS: set[str] = set()
 
 _HISTORY_FLAGS = {
-    "-r": readline.read_history_file,   # read file → append its lines to the in-memory list
-    "-w": readline.write_history_file,  # write the list to file (creates it if absent, "w" mode)
+    "-r": readline.read_history_file,   
+    "-w": readline.write_history_file, 
     "-a": append_history,
 }
 
