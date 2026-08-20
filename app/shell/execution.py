@@ -17,7 +17,7 @@ Depends on: command_resolution (find_executable, BUILTINS).
 
 import os
 import sys
-from .command_resolution import find_executable, BUILTINS
+from .command_resolution import find_executable, BUILTINS, JOBS, _job_state
 from subprocess import Popen, PIPE, run
 
 
@@ -98,8 +98,6 @@ def exec_pipe(segments: list[list[str]]):
             else:
                 prev_stdin = proc.stdout
 
-
-
 def exec_subprocess(cmd: str, args: list[str], stdout=None, stderr=None) -> None:
     """
     Run an external command as a child process.
@@ -124,3 +122,20 @@ def exec_subprocess(cmd: str, args: list[str], stdout=None, stderr=None) -> None
         print(f"{cmd}: permission denied", file=stderr or sys.stderr)
     except OSError as e:
         print(f"Error executing {cmd}: {e}", file=stderr or sys.stderr)
+
+def exec_background(cmd: str, args: list[str], stdout=None, stderr=None) -> None:
+    resolved = find_executable(cmd)
+    if resolved is None:
+        print(f"{cmd}: command not found", file=stderr or sys.stderr)
+        return
+
+    try:
+        proc = Popen([cmd] + args, executable=resolved, stdout=stdout, stderr=stderr)
+    except OSError as e:
+        print(f"Error executing {cmd}: {e}", file=stderr or sys.stderr)
+        return
+    
+    number = _job_state["next_number"]
+    JOBS[number] = proc
+    _job_state["next_number"] = number + 1
+    print(f"[{number}] {proc.pid}")

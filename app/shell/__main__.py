@@ -10,9 +10,9 @@ import sys
 import atexit
 from contextlib import redirect_stdout, redirect_stderr
 from .completion import init_readline
-from .parsing import parse_line, extract_redirections, extract_pipe_segments
+from .parsing import parse_line, extract_redirections, extract_pipe_segments, extract_background
 from .command_resolution import collect_execs, load_history, save_history, BUILTINS
-from .execution import exec_subprocess, exec_pipe
+from .execution import exec_subprocess, exec_pipe, exec_background
 
 
 def main() -> None:
@@ -38,7 +38,7 @@ def main() -> None:
             continue
 
         command_name = user_input[0]
-        args = user_input[1:]
+        args, background = extract_background(user_input[1:])
         redirections = extract_redirections(args)
         
         stdout = stderr = None
@@ -55,6 +55,8 @@ def main() -> None:
             if "|" in user_input:
                 segments= extract_pipe_segments(user_input)
                 exec_pipe(segments)
+            elif background:
+                exec_background(command_name, redirections.clean_args, stdout=stdout, stderr=stderr)
             else:
                 if command_name in BUILTINS:
                     with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):

@@ -183,3 +183,8 @@ def extract_pipe_segments(args: list[str]) -> list[list[str]]:
         segments.append(current_segment)
 
     return segments
+
+def extract_background(args: list[str]) -> tuple[list[str], bool]:
+    if args and args[-1] == "&":
+        return args[:-1], True
+    return args, False

@@ -15,6 +15,7 @@ import sys
 import os
 import readline
 from typing import Callable
+from subprocess import Popen
 
 
 def find_executable(exec_name: str) -> str | None:
@@ -165,8 +166,14 @@ def save_history():
         pass
 
 def _jobs() -> None:
-    return None
-
+    finished = []
+    for number, proc in JOBS.items():
+        if proc.poll() is None:
+            print(f"[{number}] Running")
+        else:
+            finished.append(number)
+    for number in finished:
+        del JOBS[number]
 
 BUILTINS = {
     "exit": _exit,
@@ -188,4 +195,10 @@ _HISTORY_FLAGS = {
 
 _history_state = {
     "last_appended": 0,
+}
+
+JOBS: dict[int, Popen] = {}
+
+_job_state = {
+    "next_number": 1,
 }
