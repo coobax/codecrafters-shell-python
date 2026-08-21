@@ -11,15 +11,6 @@ from dataclasses import dataclass, field
 
 
 class ParseState(Enum):
-    """
-    Finite state machine for shell token parsing.
-
-    Why an Enum instead of plain strings ("normal", "single_quote", ...):
-    - Typos like ParseState.NROMAL fail at attribute lookup → immediate error
-    - match/case exhaustiveness — the compiler-like structure catches
-      missing states during development
-    - Closed set: no one can invent ParseState.MAGIC at runtime
-    """
     NORMAL = auto()
     IN_SINGLE = auto()
     IN_DOUBLE = auto()
@@ -27,15 +18,6 @@ class ParseState(Enum):
 
 @dataclass
 class RedirectionResult:
-    """
-    Bundles the output of extract_redirections() into a named structure.
-
-    Why a dataclass instead of a 5-element tuple:
-    - result.stdout_target reads better than result[1]
-    - Adding a field (e.g. pipe_segments) won't break every call site
-    - Typos like result.stdot_target raise AttributeError immediately
-    - Default values document the "nothing redirected" baseline
-    """
     clean_args: list = field(default_factory=list)
     stdout_target: str | None = None
     stderr_target: str | None = None
@@ -44,22 +26,6 @@ class RedirectionResult:
 
 
 def parse_line(line: str) -> list[str]:
-    """
-    Split a raw input line into tokens, respecting quoting and escaping.
-
-    Implements a finite state machine that walks the input character by
-    character. Each state determines how the next character is interpreted:
-    - NORMAL: whitespace splits tokens, quotes change state
-    - IN_SINGLE: everything is literal until closing '
-    - IN_DOUBLE: like single but \\ escapes certain characters
-    - ESCAPE: next character is literal (context-dependent in double quotes)
-
-    Args:
-        line: Raw input string from the user.
-
-    Returns:
-        List of parsed tokens with quotes and escapes resolved.
-    """
     state = ParseState.NORMAL
     current = []
     tokens = []
@@ -130,18 +96,6 @@ _REDIRECT_OPERATORS = {
 
 
 def extract_redirections(args: list[str]) -> RedirectionResult:
-    """
-    Separate redirection operators from regular arguments.
-
-    Scans the token list for known operators (>, >>, 2>, etc.) and
-    extracts their targets. Everything else becomes clean_args.
-
-    Args:
-        args: Token list (output of parse_line, minus the command name).
-
-    Returns:
-        RedirectionResult with clean args and any redirection targets.
-    """
     handles: dict[str, str | None] = {"stdout": None, "stderr": None}
     appends = {"stdout": False, "stderr": False}
     clean_args = []

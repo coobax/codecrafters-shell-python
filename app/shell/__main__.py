@@ -1,10 +1,3 @@
-"""
-Entry point for the shell package — run via `python -m shell`.
-
-This module is the orchestrator: it initializes subsystems, runs the
-REPL loop, and delegates every step to the responsible module.
-No business logic lives here — only glue.
-"""
 
 import sys
 import atexit
@@ -16,12 +9,6 @@ from .execution import exec_subprocess, exec_pipe, exec_background
 
 
 def main() -> None:
-    """
-    Shell REPL — read, evaluate, print, loop.
-
-    Initialization order matters: collect_execs() populates EXECS
-    before init_readline() sets up the completer that searches it.
-    """
     collect_execs()
     init_readline()
     load_history()
@@ -56,7 +43,7 @@ def main() -> None:
                 segments= extract_pipe_segments(user_input)
                 exec_pipe(segments)
             elif background:
-                exec_background(command_name, redirections.clean_args, stdout=stdout, stderr=stderr)
+                exec_background(command_name, redirections.clean_args, line, stdout=stdout, stderr=stderr)
             else:
                 if command_name in BUILTINS:
                     with redirect_stdout(stdout or sys.stdout), redirect_stderr(stderr or sys.stderr):

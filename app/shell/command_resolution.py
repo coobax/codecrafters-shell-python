@@ -16,22 +16,10 @@ import os
 import readline
 from typing import Callable
 from subprocess import Popen
+from dataclasses import dataclass,fields
 
 
 def find_executable(exec_name: str) -> str | None:
-    """
-    Search PATH for an executable matching exec_name.
-
-    Walks each directory in PATH left-to-right and returns the first
-    match that is both a regular file and has execute permission.
-    First match wins — same semantics as bash/POSIX.
-
-    Args:
-        exec_name: The bare command name (e.g. "cat", not "/usr/bin/cat").
-
-    Returns:
-        Absolute path to the executable, or None if not found.
-    """
     for path in os.environ.get("PATH", "").split(os.pathsep):
         full_path = os.path.join(path, exec_name)
         if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
@@ -40,12 +28,6 @@ def find_executable(exec_name: str) -> str | None:
 
 
 def collect_execs() -> None:
-    """
-    Populate the EXECS set with all executable names found on PATH.
-
-    Called once at shell startup from __main__.py — NOT at import time,
-    so importing this module for tests or introspection stays cheap.
-    """
     for path in os.environ.get("PATH", "").split(os.pathsep):
         try:
             for executable in os.listdir(path):
@@ -167,9 +149,10 @@ def save_history():
 
 def _jobs() -> None:
     finished = []
-    for number, proc in JOBS.items():
-        if proc.poll() is None:
-            print(f"[{number}] Running")
+    status = "Running"
+    for number, job in JOBS.items():
+        if job.proc.poll() is None:
+            print(f"[{number}]+  {status:<24}{job.line}")
         else:
             finished.append(number)
     for number in finished:
@@ -197,7 +180,13 @@ _history_state = {
     "last_appended": 0,
 }
 
-JOBS: dict[int, Popen] = {}
+@dataclass
+class Job:
+    proc: Popen
+    line: str
+
+
+JOBS: dict[int, Job] = {}
 
 _job_state = {
     "next_number": 1,

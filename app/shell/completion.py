@@ -41,18 +41,6 @@ def _completer(text:str, state: int) -> str | None:
 
 
 def _match_display_hook(substitution: str, matches: Sequence[str], longest_match_length: int,) -> None:
-    """
-    Called by readline when multiple completions exist and need display.
-
-    Prints all matches on one line, then re-draws the prompt with the
-    current input buffer so the user doesn't lose context.
-
-    Args:
-        substitution: The common prefix readline has already inserted.
-        matches: All completion candidates.
-        longest_match_length: Length of the longest match (unused but
-            required by readline's callback signature).
-    """
     print("")
     matches = sorted(matches)
     for match in matches:
@@ -66,12 +54,6 @@ def _match_display_hook(substitution: str, matches: Sequence[str], longest_match
 
 
 def init_readline() -> None:
-    """
-    Configure readline for tab completion.
-
-    Called once from __main__.py at shell startup — not at import time,
-    so importing this module for tests stays side-effect free.
-    """
     readline.parse_and_bind("tab: complete")
     readline.set_completer(_completer)
     readline.set_completion_display_matches_hook(_match_display_hook)
